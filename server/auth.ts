@@ -98,13 +98,7 @@ export function setupAuth(app: Express) {
         });
     });
 
-    app.get("/api/user", (req, res) => {
-        if (req.isAuthenticated()) {
-            res.json(req.user);
-        } else {
-            res.status(401).send("Not authenticated");
-        }
-    });
+
 }
 
 export function isAuthenticated(req: any, res: any, next: any) {
