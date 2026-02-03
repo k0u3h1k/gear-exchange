@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import MongoStore from "connect-mongo";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -27,7 +28,9 @@ export function setupAuth(app: Express) {
         secret: process.env.SESSION_SECRET || "r4nd0m_s3cr3t",
         resave: false,
         saveUninitialized: false,
-        store: undefined,
+        store: MongoStore.create({
+            mongoUrl: process.env.DATABASE_URL
+        }),
     };
 
     app.use(session(sessionSettings));
@@ -53,7 +56,7 @@ export function setupAuth(app: Express) {
     );
 
     passport.serializeUser((user, done) => done(null, (user as User).id));
-    passport.deserializeUser(async (id: number, done) => {
+    passport.deserializeUser(async (id: string, done) => {
         try {
             const user = await storage.getUser(id);
             done(null, user);
@@ -102,4 +105,11 @@ export function setupAuth(app: Express) {
             res.status(401).send("Not authenticated");
         }
     });
+}
+
+export function isAuthenticated(req: any, res: any, next: any) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.status(401).send("Not authenticated");
 }

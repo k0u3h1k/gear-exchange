@@ -4,8 +4,6 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./auth";
-import { users } from "@shared/schema";
-import { db } from "./db";
 
 async function getInternalUser(req: any) {
   if (req.isAuthenticated()) {
@@ -22,13 +20,13 @@ export async function registerRoutes(
 
   app.get(api.items.list.path, async (req, res) => {
     try {
-      const filters = api.items.list.input.safeParse(req.query);
+      const filters = api.items.list.input?.safeParse(req.query);
       const items = await storage.getItems({
         lat: req.query.lat ? parseFloat(req.query.lat as string) : undefined,
         lng: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
         radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
-        category: filters.success ? (filters.data.category as any) : undefined,
-        search: filters.success ? (filters.data.search as any) : undefined
+        category: filters?.success && filters.data ? (filters.data.category as any) : undefined,
+        search: filters?.success && filters.data ? (filters.data.search as any) : undefined
       });
       res.json(items);
     } catch (err) {
@@ -37,7 +35,7 @@ export async function registerRoutes(
   });
 
   app.get(api.items.get.path, async (req, res) => {
-    const item = await storage.getItem(Number(req.params.id));
+    const item = await storage.getItem(String(req.params.id));
     if (!item) {
       return res.status(404).json({ message: "Item not found" });
     }
@@ -67,7 +65,7 @@ export async function registerRoutes(
     const user = await getInternalUser(req);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    const itemId = Number(req.params.id);
+    const itemId = String(req.params.id);
     const existingItem = await storage.getItem(itemId);
 
     if (!existingItem) return res.status(404).json({ message: "Item not found" });
@@ -86,7 +84,7 @@ export async function registerRoutes(
     const user = await getInternalUser(req);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    const itemId = Number(req.params.id);
+    const itemId = String(req.params.id);
     const existingItem = await storage.getItem(itemId);
 
     if (!existingItem) return res.status(404).json({ message: "Item not found" });
@@ -108,7 +106,7 @@ export async function registerRoutes(
     const user = await getInternalUser(req);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    const tradeId = Number(req.params.id);
+    const tradeId = String(req.params.id);
     const trade = await storage.getTrade(tradeId);
 
     if (!trade) return res.status(404).json({ message: "Trade not found" });
@@ -145,7 +143,7 @@ export async function registerRoutes(
     const user = await getInternalUser(req);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    const tradeId = Number(req.params.id);
+    const tradeId = String(req.params.id);
     const trade = await storage.getTrade(tradeId);
 
     if (!trade) return res.status(404).json({ message: "Trade not found" });
@@ -167,7 +165,7 @@ export async function registerRoutes(
   app.get(api.messages.list.path, isAuthenticated, async (req, res) => {
     const user = await getInternalUser(req);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const tradeId = Number(req.params.tradeId);
+    const tradeId = String(req.params.tradeId);
     const trade = await storage.getTrade(tradeId);
     if (!trade) return res.status(404).json({ message: "Trade not found" });
     if (trade.requesterId !== user.id && trade.ownerId !== user.id) return res.status(403).json({ message: "Forbidden" });
@@ -178,7 +176,7 @@ export async function registerRoutes(
   app.post(api.messages.create.path, isAuthenticated, async (req, res) => {
     const user = await getInternalUser(req);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
-    const tradeId = Number(req.params.tradeId);
+    const tradeId = String(req.params.tradeId);
     const trade = await storage.getTrade(tradeId);
     if (!trade) return res.status(404).json({ message: "Trade not found" });
     if (trade.requesterId !== user.id && trade.ownerId !== user.id) return res.status(403).json({ message: "Forbidden" });
@@ -218,8 +216,10 @@ export async function registerRoutes(
 }
 
 async function seedDatabase() {
-  const usersList = await db.select().from(users).limit(1);
-  if (usersList.length === 0) {
+  // Check if any users exist
+  const existingUser = await storage.getUserByUsername("guitar_hero");
+
+  if (!existingUser) {
     const demoUser1 = await storage.createUser({
       username: "guitar_hero",
       email: "hero@example.com",
@@ -241,7 +241,9 @@ async function seedDatabase() {
       category: "Music",
       images: ["https://images.unsplash.com/photo-1564186763535-ebb21ef5277f"],
       status: "available",
-      location: "New York, NY"
+      location: "New York, NY",
+      latitude: 40.7128,
+      longitude: -74.0060
     });
     await storage.createItem({
       ownerId: demoUser2.id,
@@ -250,7 +252,9 @@ async function seedDatabase() {
       category: "Tech",
       images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32"],
       status: "available",
-      location: "Brooklyn, NY"
+      location: "Brooklyn, NY",
+      latitude: 40.6782,
+      longitude: -73.9442
     });
   }
 }

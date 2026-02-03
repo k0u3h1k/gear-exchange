@@ -39,3 +39,16 @@ export function useUpdateUser() {
     },
   });
 }
+
+export function useLogout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/logout", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to logout");
+    },
+    onSuccess: () => {
+      queryClient.setQueryData([api.users.me.path], null);
+    },
+  });
+}

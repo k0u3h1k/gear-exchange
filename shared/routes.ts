@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { insertItemSchema, items, trades, messages, users } from './schema';
+import { insertItemSchema, Item, Trade, Message, User, CreateItemRequest, UpdateItemRequest, CreateTradeRequest, UpdateTradeStatusRequest, CreateMessageRequest } from './schema';
+
+export type { CreateItemRequest, UpdateItemRequest, CreateTradeRequest, UpdateTradeStatusRequest, CreateMessageRequest };
 
 export const errorSchemas = {
   validation: z.object({
@@ -25,14 +27,14 @@ export const api = {
         search: z.string().optional(),
       }).optional(),
       responses: {
-        200: z.array(z.custom<typeof items.$inferSelect>()),
+        200: z.array(z.custom<Item>()),
       },
     },
     get: {
       method: 'GET' as const,
       path: '/api/items/:id',
       responses: {
-        200: z.custom<typeof items.$inferSelect>(),
+        200: z.custom<Item>(),
         404: errorSchemas.notFound,
       },
     },
@@ -41,7 +43,7 @@ export const api = {
       path: '/api/items',
       input: insertItemSchema,
       responses: {
-        201: z.custom<typeof items.$inferSelect>(),
+        201: z.custom<Item>(),
         400: errorSchemas.validation,
         401: errorSchemas.internal,
       },
@@ -49,9 +51,10 @@ export const api = {
     update: {
       method: 'PATCH' as const,
       path: '/api/items/:id',
+      console: 'input',
       input: insertItemSchema.partial(),
       responses: {
-        200: z.custom<typeof items.$inferSelect>(),
+        200: z.custom<Item>(),
         404: errorSchemas.notFound,
         403: errorSchemas.internal,
       },
@@ -71,23 +74,23 @@ export const api = {
       method: 'GET' as const,
       path: '/api/trades',
       responses: {
-        200: z.array(z.custom<typeof trades.$inferSelect>()),
+        200: z.array(z.custom<Trade>()),
       },
     },
     get: {
       method: 'GET' as const,
       path: '/api/trades/:id',
       responses: {
-        200: z.custom<typeof trades.$inferSelect & { item: typeof items.$inferSelect, messages: typeof messages.$inferSelect[] }>(),
+        200: z.custom<Trade & { item: Item, messages: Message[] }>(),
         404: errorSchemas.notFound,
       },
     },
     create: {
       method: 'POST' as const,
       path: '/api/trades',
-      input: z.object({ itemId: z.number() }),
+      input: z.object({ itemId: z.string() }),
       responses: {
-        201: z.custom<typeof trades.$inferSelect>(),
+        201: z.custom<Trade>(),
         400: errorSchemas.validation,
       },
     },
@@ -96,7 +99,7 @@ export const api = {
       path: '/api/trades/:id/status',
       input: z.object({ status: z.enum(["accepted", "rejected", "completed"]) }),
       responses: {
-        200: z.custom<typeof trades.$inferSelect>(),
+        200: z.custom<Trade>(),
         403: errorSchemas.internal,
         404: errorSchemas.notFound,
       },
@@ -107,7 +110,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/trades/:tradeId/messages',
       responses: {
-        200: z.array(z.custom<typeof messages.$inferSelect>()),
+        200: z.array(z.custom<Message>()),
       },
     },
     create: {
@@ -115,7 +118,7 @@ export const api = {
       path: '/api/trades/:tradeId/messages',
       input: z.object({ content: z.string() }),
       responses: {
-        201: z.custom<typeof messages.$inferSelect>(),
+        201: z.custom<Message>(),
         403: errorSchemas.internal,
       },
     },
@@ -125,7 +128,7 @@ export const api = {
       method: 'GET' as const,
       path: '/api/user',
       responses: {
-        200: z.custom<typeof users.$inferSelect>(),
+        200: z.custom<User>(),
         401: errorSchemas.internal,
       },
     },
@@ -137,7 +140,7 @@ export const api = {
         location: z.string().optional(),
       }),
       responses: {
-        200: z.custom<typeof users.$inferSelect>(),
+        200: z.custom<User>(),
         401: errorSchemas.internal,
       },
     },
