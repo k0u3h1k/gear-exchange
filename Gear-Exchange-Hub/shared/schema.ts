@@ -116,10 +116,13 @@ export const insertMessageSchema = createInsertSchema(messages).omit({ id: true,
 // === EXPLICIT TYPES ===
 
 export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = typeof users.$inferInsert;
 export type Item = typeof items.$inferSelect;
+export type InsertItem = typeof items.$inferInsert;
 export type Trade = typeof trades.$inferSelect;
+export type InsertTrade = typeof trades.$inferInsert;
 export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
 
 export type CreateItemRequest = InsertItem;
 export type UpdateItemRequest = Partial<InsertItem>;

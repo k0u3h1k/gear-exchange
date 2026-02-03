@@ -46,13 +46,13 @@ export async function registerRoutes(
 
   app.get(api.items.list.path, async (req, res) => {
     try {
-      const filters = api.items.list.input.parse(req.query);
+      const filters = api.items.list.input.safeParse(req.query);
       const items = await storage.getItems({
         lat: req.query.lat ? parseFloat(req.query.lat as string) : undefined,
         lng: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
         radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
-        category: filters.category,
-        search: filters.search
+        category: filters.success ? (filters.data.category as string) : undefined,
+        search: filters.success ? (filters.data.search as string) : undefined
       });
       res.json(items);
     } catch (err) {
