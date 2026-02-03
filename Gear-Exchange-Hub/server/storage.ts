@@ -28,15 +28,16 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getItems(filters?: { location?: string; category?: string; search?: string }): Promise<Item[]> {
+  async getUserByReplitId(replitId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, replitId));
+    return user;
+  }
+
+  async getItems(filters?: { lat?: number; lng?: number; radius?: number; category?: string; search?: string }): Promise<Item[]> {
     let conditions = [eq(items.status, "available")];
 
     if (filters?.category) {
       conditions.push(eq(items.category, filters.category));
-    }
-    
-    if (filters?.location) {
-      conditions.push(sql`lower(${items.location}) LIKE ${`%${filters.location.toLowerCase()}%`}`);
     }
 
     if (filters?.search) {
@@ -44,6 +45,13 @@ export class DatabaseStorage implements IStorage {
         sql`lower(${items.title}) LIKE ${`%${filters.search.toLowerCase()}%`}`,
         sql`lower(${items.description}) LIKE ${`%${filters.search.toLowerCase()}%`}`
       ) as any);
+    }
+
+    if (filters?.lat && filters?.lng && filters?.radius) {
+      const radiusInMiles = filters.radius;
+      // Haversine formula in SQL
+      const distanceSql = sql`(3958.8 * acos(cos(radians(${filters.lat})) * cos(radians(${items.latitude})) * cos(radians(${items.longitude}) - radians(${filters.lng})) + sin(radians(${filters.lat})) * sin(radians(${items.latitude}))))`;
+      conditions.push(sql`${distanceSql} <= ${radiusInMiles}`);
     }
 
     return await db.select().from(items).where(and(...conditions));
@@ -103,16 +111,6 @@ export class DatabaseStorage implements IStorage {
 
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByReplitId(replitId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.replitId, replitId));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 

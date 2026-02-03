@@ -47,7 +47,13 @@ export async function registerRoutes(
   app.get(api.items.list.path, async (req, res) => {
     try {
       const filters = api.items.list.input.parse(req.query);
-      const items = await storage.getItems(filters);
+      const items = await storage.getItems({
+        lat: req.query.lat ? parseFloat(req.query.lat as string) : undefined,
+        lng: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
+        radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
+        category: filters.category,
+        search: filters.search
+      });
       res.json(items);
     } catch (err) {
         res.status(400).json({ message: "Invalid query parameters" });
