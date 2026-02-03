@@ -21,17 +21,13 @@ export interface IStorage {
   getMessages(tradeId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   getUser(id: number): Promise<User | undefined>;
-  getUserByReplitId(replitId: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUserByReplitId(replitId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.googleId, replitId));
-    return user;
-  }
+
 
   async getItems(filters?: { lat?: number; lng?: number; radius?: number; category?: string; search?: string }): Promise<Item[]> {
     let conditions = [eq(items.status, "available")];

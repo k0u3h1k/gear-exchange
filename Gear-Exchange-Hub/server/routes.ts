@@ -3,38 +3,15 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
-import { isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { users } from "@shared/schema";
 import { db } from "./db";
 
 async function getInternalUser(req: any) {
-    if (!req.user || !req.user.claims || !req.user.claims.sub) {
-        return null;
-    }
-    const replitId = req.user.claims.sub;
-    
-    let user = await storage.getUserByReplitId(replitId);
-    
-    if (!user) {
-        const username = req.user.claims.username || `user_${replitId.substring(0, 8)}`;
-        const email = req.user.claims.email;
-        
-        try {
-           user = await storage.createUser({
-               username,
-               email,
-               googleId: replitId,
-               bio: "New Hobby Hopper",
-               location: "Unknown",
-               latitude: null,
-               longitude: null
-           });
-        } catch (e) {
-           user = await storage.getUserByUsername(username);
-        }
-    }
-    return user;
+  if (req.isAuthenticated()) {
+    return req.user;
+  }
+  return null;
 }
 
 export async function registerRoutes(
@@ -42,7 +19,6 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   await setupAuth(app);
-  registerAuthRoutes(app);
 
   app.get(api.items.list.path, async (req, res) => {
     try {
@@ -56,7 +32,7 @@ export async function registerRoutes(
       });
       res.json(items);
     } catch (err) {
-        res.status(400).json({ message: "Invalid query parameters" });
+      res.status(400).json({ message: "Invalid query parameters" });
     }
   });
 
@@ -102,7 +78,7 @@ export async function registerRoutes(
       const updatedItem = await storage.updateItem(itemId, input);
       res.json(updatedItem);
     } catch (err) {
-       res.status(400).json({ message: "Validation error" });
+      res.status(400).json({ message: "Validation error" });
     }
   });
 
@@ -137,7 +113,7 @@ export async function registerRoutes(
 
     if (!trade) return res.status(404).json({ message: "Trade not found" });
     if (trade.requesterId !== user.id && trade.ownerId !== user.id) {
-        return res.status(403).json({ message: "Forbidden" });
+      return res.status(403).json({ message: "Forbidden" });
     }
 
     res.json(trade);
@@ -155,13 +131,13 @@ export async function registerRoutes(
       if (item.ownerId === user.id) return res.status(400).json({ message: "Cannot trade with yourself" });
 
       const trade = await storage.createTrade({
-          itemId: input.itemId,
-          requesterId: user.id,
-          ownerId: item.ownerId
+        itemId: input.itemId,
+        requesterId: user.id,
+        ownerId: item.ownerId
       });
       res.status(201).json(trade);
     } catch (err) {
-        res.status(400).json({ message: "Validation error" });
+      res.status(400).json({ message: "Validation error" });
     }
   });
 
@@ -173,68 +149,68 @@ export async function registerRoutes(
     const trade = await storage.getTrade(tradeId);
 
     if (!trade) return res.status(404).json({ message: "Trade not found" });
-    
+
     if (trade.ownerId !== user.id && trade.requesterId !== user.id) return res.status(403).json({ message: "Forbidden" });
 
     try {
-        const input = api.trades.updateStatus.input.parse(req.body);
-        if (input.status === 'accepted' || input.status === 'rejected') {
-             if (trade.ownerId !== user.id) return res.status(403).json({ message: "Only owner can accept/reject" });
-        }
-        const updatedTrade = await storage.updateTradeStatus(tradeId, input.status);
-        res.json(updatedTrade);
+      const input = api.trades.updateStatus.input.parse(req.body);
+      if (input.status === 'accepted' || input.status === 'rejected') {
+        if (trade.ownerId !== user.id) return res.status(403).json({ message: "Only owner can accept/reject" });
+      }
+      const updatedTrade = await storage.updateTradeStatus(tradeId, input.status);
+      res.json(updatedTrade);
     } catch (err) {
-        res.status(400).json({ message: "Validation error" });
+      res.status(400).json({ message: "Validation error" });
     }
   });
 
   app.get(api.messages.list.path, isAuthenticated, async (req, res) => {
-      const user = await getInternalUser(req);
-      if (!user) return res.status(401).json({ message: "Unauthorized" });
-      const tradeId = Number(req.params.tradeId);
-      const trade = await storage.getTrade(tradeId);
-      if (!trade) return res.status(404).json({ message: "Trade not found" });
-      if (trade.requesterId !== user.id && trade.ownerId !== user.id) return res.status(403).json({ message: "Forbidden" });
-      const messages = await storage.getMessages(tradeId);
-      res.json(messages);
+    const user = await getInternalUser(req);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    const tradeId = Number(req.params.tradeId);
+    const trade = await storage.getTrade(tradeId);
+    if (!trade) return res.status(404).json({ message: "Trade not found" });
+    if (trade.requesterId !== user.id && trade.ownerId !== user.id) return res.status(403).json({ message: "Forbidden" });
+    const messages = await storage.getMessages(tradeId);
+    res.json(messages);
   });
 
   app.post(api.messages.create.path, isAuthenticated, async (req, res) => {
-      const user = await getInternalUser(req);
-      if (!user) return res.status(401).json({ message: "Unauthorized" });
-      const tradeId = Number(req.params.tradeId);
-      const trade = await storage.getTrade(tradeId);
-      if (!trade) return res.status(404).json({ message: "Trade not found" });
-      if (trade.requesterId !== user.id && trade.ownerId !== user.id) return res.status(403).json({ message: "Forbidden" });
-      try {
-          const input = api.messages.create.input.parse(req.body);
-          const message = await storage.createMessage({
-              tradeId,
-              senderId: user.id,
-              content: input.content
-          });
-          res.status(201).json(message);
-      } catch (err) {
-          res.status(400).json({ message: "Validation error" });
-      }
+    const user = await getInternalUser(req);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    const tradeId = Number(req.params.tradeId);
+    const trade = await storage.getTrade(tradeId);
+    if (!trade) return res.status(404).json({ message: "Trade not found" });
+    if (trade.requesterId !== user.id && trade.ownerId !== user.id) return res.status(403).json({ message: "Forbidden" });
+    try {
+      const input = api.messages.create.input.parse(req.body);
+      const message = await storage.createMessage({
+        tradeId,
+        senderId: user.id,
+        content: input.content
+      });
+      res.status(201).json(message);
+    } catch (err) {
+      res.status(400).json({ message: "Validation error" });
+    }
   });
 
   app.get(api.users.me.path, isAuthenticated, async (req, res) => {
-      const user = await getInternalUser(req);
-      if (!user) return res.status(401).json({ message: "Unauthorized" });
-      res.json(user);
+    const user = await getInternalUser(req);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    res.json(user);
   });
 
   app.patch(api.users.update.path, isAuthenticated, async (req, res) => {
-      const user = await getInternalUser(req);
-      if (!user) return res.status(401).json({ message: "Unauthorized" });
-      try {
-          const input = api.users.update.input.parse(req.body);
-          const updatedUser = await storage.updateUser(user.id, input);
-          res.json(updatedUser);
-      } catch (err) {
-          res.status(400).json({ message: "Validation error" });
-      }
+    const user = await getInternalUser(req);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const input = api.users.update.input.parse(req.body);
+      const updatedUser = await storage.updateUser(user.id, input);
+      res.json(updatedUser);
+    } catch (err) {
+      res.status(400).json({ message: "Validation error" });
+    }
   });
 
   await seedDatabase();
@@ -242,39 +218,39 @@ export async function registerRoutes(
 }
 
 async function seedDatabase() {
-    const usersList = await db.select().from(users).limit(1);
-    if (usersList.length === 0) {
-        const demoUser1 = await storage.createUser({
-            username: "guitar_hero",
-            email: "hero@example.com",
-            bio: "Love vintage guitars",
-            location: "New York, NY",
-            googleId: "demo_1"
-        });
-        const demoUser2 = await storage.createUser({
-            username: "camera_fan",
-            email: "cam@example.com",
-            bio: "Canon shooter",
-            location: "Brooklyn, NY",
-            googleId: "demo_2"
-        });
-        await storage.createItem({
-            ownerId: demoUser1.id,
-            title: "Fender Stratocaster 1998",
-            description: "Classic sunburst, good condition.",
-            category: "Music",
-            images: ["https://images.unsplash.com/photo-1564186763535-ebb21ef5277f"],
-            status: "available",
-            location: "New York, NY"
-        });
-        await storage.createItem({
-            ownerId: demoUser2.id,
-            title: "Canon AE-1 Program",
-            description: "Vintage film camera.",
-            category: "Tech",
-            images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32"],
-            status: "available",
-            location: "Brooklyn, NY"
-        });
-    }
+  const usersList = await db.select().from(users).limit(1);
+  if (usersList.length === 0) {
+    const demoUser1 = await storage.createUser({
+      username: "guitar_hero",
+      email: "hero@example.com",
+      bio: "Love vintage guitars",
+      location: "New York, NY",
+      googleId: "demo_1"
+    });
+    const demoUser2 = await storage.createUser({
+      username: "camera_fan",
+      email: "cam@example.com",
+      bio: "Canon shooter",
+      location: "Brooklyn, NY",
+      googleId: "demo_2"
+    });
+    await storage.createItem({
+      ownerId: demoUser1.id,
+      title: "Fender Stratocaster 1998",
+      description: "Classic sunburst, good condition.",
+      category: "Music",
+      images: ["https://images.unsplash.com/photo-1564186763535-ebb21ef5277f"],
+      status: "available",
+      location: "New York, NY"
+    });
+    await storage.createItem({
+      ownerId: demoUser2.id,
+      title: "Canon AE-1 Program",
+      description: "Vintage film camera.",
+      category: "Tech",
+      images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32"],
+      status: "available",
+      location: "Brooklyn, NY"
+    });
+  }
 }

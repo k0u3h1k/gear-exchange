@@ -2,6 +2,21 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import fs from "fs";
+import path from "path";
+
+// Load .env manually since we can't rely on dotenv being installed/working in this environment
+const envPath = path.resolve(process.cwd(), ".env");
+if (fs.existsSync(envPath)) {
+  console.log("Loading .env from", envPath);
+  const envConfig = fs.readFileSync(envPath, "utf-8");
+  envConfig.split("\n").forEach((line) => {
+    const [key, value] = line.split("=");
+    if (key && value) {
+      process.env[key.trim()] = value.trim();
+    }
+  });
+}
 
 const app = express();
 const httpServer = createServer(app);

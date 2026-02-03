@@ -3,7 +3,7 @@ import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// === AUTH TABLES (Mandatory for Replit Auth) ===
+// === AUTH TABLES ===
 
 export const sessions = pgTable(
   "sessions",
@@ -19,11 +19,15 @@ export const sessions = pgTable(
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  googleId: text("google_id").unique(), // Keep existing naming if possible for compatibility
+  googleId: text("google_id").unique(),
   username: text("username").notNull().unique(),
+  password: text("password"),
   email: text("email"),
   bio: text("bio"),
-  location: text("location"), 
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
+  location: text("location"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -37,7 +41,7 @@ export const items = pgTable("items", {
   category: text("category").notNull(),
   images: text("images").array().notNull().default([]),
   status: text("status").notNull().default("available"),
-  location: text("location"), 
+  location: text("location"),
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   createdAt: timestamp("created_at").defaultNow(),
