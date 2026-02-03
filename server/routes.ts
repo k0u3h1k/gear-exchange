@@ -227,7 +227,7 @@ export async function registerRoutes(
   });
 
   // API catch-all for 404s
-  app.all("/api/(.*)", (req, res) => {
+  app.all("/api/:path(.*)", (req, res) => {
     res.status(404).json({ message: "API Endpoint Not Found" });
   });
 
