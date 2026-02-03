@@ -51,8 +51,8 @@ export async function registerRoutes(
         lat: req.query.lat ? parseFloat(req.query.lat as string) : undefined,
         lng: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
         radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
-        category: filters.success ? (filters.data.category as string) : undefined,
-        search: filters.success ? (filters.data.search as string) : undefined
+        category: filters.success ? (filters.data.category as any) : undefined,
+        search: filters.success ? (filters.data.search as any) : undefined
       });
       res.json(items);
     } catch (err) {
