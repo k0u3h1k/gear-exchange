@@ -77,56 +77,7 @@ export interface Message {
 }
 
 // API Schemas matched to what routes expect
-export const api = {
-  items: {
-    list: {
-      path: "/api/items",
-      input: z.object({
-        category: z.string().optional(),
-        search: z.string().optional(),
-        lat: z.string().optional(),
-        lng: z.string().optional(),
-        radius: z.string().optional()
-      })
-    },
-    get: { path: "/api/items/:id" },
-    create: {
-      path: "/api/items",
-      input: insertItemSchema
-    },
-    update: {
-      path: "/api/items/:id",
-      input: insertItemSchema.partial()
-    },
-    delete: { path: "/api/items/:id" }
-  },
-  trades: {
-    list: { path: "/api/trades" },
-    get: { path: "/api/trades/:id" },
-    create: {
-      path: "/api/trades",
-      input: z.object({ itemId: z.string() })
-    },
-    updateStatus: {
-      path: "/api/trades/:id/status",
-      input: z.object({ status: z.enum(["accepted", "rejected", "completed"]) })
-    }
-  },
-  messages: {
-    list: { path: "/api/trades/:tradeId/messages" },
-    create: {
-      path: "/api/trades/:tradeId/messages",
-      input: z.object({ content: z.string() })
-    }
-  },
-  users: {
-    me: { path: "/api/user" },
-    update: {
-      path: "/api/user",
-      input: insertUserSchema.partial()
-    }
-  }
-};
+// API Schemas removed in favor of shared/routes.ts
 
 export type CreateTradeRequest = { itemId: string };
 export type CreateItemRequest = InsertItem;

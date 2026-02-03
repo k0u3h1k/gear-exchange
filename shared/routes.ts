@@ -25,6 +25,9 @@ export const api = {
         location: z.string().optional(),
         category: z.string().optional(),
         search: z.string().optional(),
+        lat: z.string().optional(),
+        lng: z.string().optional(),
+        radius: z.string().optional(),
       }).optional(),
       responses: {
         200: z.array(z.custom<Item>()),
@@ -138,6 +141,11 @@ export const api = {
       input: z.object({
         bio: z.string().optional(),
         location: z.string().optional(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        profileImageUrl: z.string().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
       }),
       responses: {
         200: z.custom<User>(),

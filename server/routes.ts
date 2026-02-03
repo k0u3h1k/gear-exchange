@@ -20,13 +20,25 @@ export async function registerRoutes(
 
   app.get(api.items.list.path, async (req, res) => {
     try {
+      // The shared route input schema now includes lat, lng, radius as optional strings or numbers depending on your shared/routes update.
+      // We updated shared/routes.ts to have them as strings (query params are strings by default in express).
       const filters = api.items.list.input?.safeParse(req.query);
+
+      if (!filters?.success) {
+        return res.status(400).json({ message: "Invalid query parameters" });
+      }
+
+      const data = filters.data || {};
+      const lat = data.lat ? parseFloat(data.lat) : undefined;
+      const lng = data.lng ? parseFloat(data.lng) : undefined;
+      const radius = data.radius ? parseFloat(data.radius) : undefined;
+
       const items = await storage.getItems({
-        lat: req.query.lat ? parseFloat(req.query.lat as string) : undefined,
-        lng: req.query.lng ? parseFloat(req.query.lng as string) : undefined,
-        radius: req.query.radius ? parseFloat(req.query.radius as string) : undefined,
-        category: filters?.success && filters.data ? (filters.data.category as any) : undefined,
-        search: filters?.success && filters.data ? (filters.data.search as any) : undefined
+        lat,
+        lng,
+        radius,
+        category: data.category,
+        search: data.search
       });
       res.json(items);
     } catch (err) {
@@ -48,6 +60,9 @@ export async function registerRoutes(
 
     try {
       const input = api.items.create.input.parse(req.body);
+      // Ensure lat/lng are strictly numbers if coming from JSON, although schema says optional number
+      // If client sends strings, we might need coercion if schema wasn't updated to Preprocess. 
+      // But shared/schema.ts says number. Client sends numbers.
       const item = await storage.createItem({ ...input, ownerId: user.id });
       res.status(201).json(item);
     } catch (err) {
