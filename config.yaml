@@ -1,0 +1,43 @@
+# LLM Output Comparative Analysis Framework Configuration
+# Central Research & Execution Settings
+
+dataset:
+  input_dir: "./gear-exchange"
+  fallback_dir: "./data"
+  expected_models: ["ChatGPT", "Claude", "Gemini"]
+  expected_prompts: 5
+  drift_flagged_prompts: [2, 3]
+
+embedding:
+  model_name: "all-MiniLM-L6-v2"
+  fallback_to_tfidf: true
+  cache_dir: "./.cache/embeddings"
+
+thresholds:
+  semantic_high_similarity: 0.82
+  semantic_moderate_similarity: 0.65
+  lexical_high_similarity: 0.45
+  claim_shared_similarity: 0.82
+  claim_similar_similarity: 0.70
+  claim_contradiction_similarity: 0.65
+  min_claim_words: 4
+
+composite_ranking:
+  weights:
+    information_richness: 0.25
+    unique_information_contribution: 0.15
+    argument_completeness: 0.15
+    evidence_support: 0.15
+    behavioral_balance: 0.10
+    vocabulary_clarity_efficiency: 0.10
+    information_density: 0.10
+
+output:
+  output_dir: "./outputs"
+  figures_dir: "./outputs/figures"
+  report_html: "./outputs/report.html"
+  report_pdf: "./outputs/report.pdf"
+  executive_summary: "./outputs/executive_summary.md"
+  qc_report: "./outputs/qc_report.txt"
+
+random_seed: 42
