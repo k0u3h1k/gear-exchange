@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 # Patterns identifying visible discourse reasoning markers
 EVIDENCE_MARKERS = [

@@ -255,8 +255,8 @@ def print_final_numerical_findings(results: Dict[str, Any]):
 
 def main():
     parser = argparse.ArgumentParser(description="LLM Output Comparative Analysis Framework")
-    parser.add_argument("--input", default="./gear-exchange", help="Path to input directory containing prompts and model outputs")
-    parser.add_argument("--output", default="./outputs", help="Directory where results and reports will be saved")
+    parser.add_argument("--input", default=None, help="Path to input directory containing prompts and model outputs")
+    parser.add_argument("--output", default=None, help="Directory where results and reports will be saved")
     parser.add_argument("--config", default="config.yaml", help="Path to configuration YAML file")
     parser.add_argument("--test", action="store_true", help="Run automated test suite")
     parser.add_argument("--report", action="store_true", help="Re-generate HTML and PDF reports from existing data")

@@ -2,7 +2,7 @@
 # Central Research & Execution Settings
 
 dataset:
-  input_dir: "./gear-exchange"
+  input_dir: "./output/input"
   fallback_dir: "./data"
   expected_models: ["ChatGPT", "Claude", "Gemini"]
   expected_prompts: 5
@@ -33,11 +33,11 @@ composite_ranking:
     information_density: 0.10
 
 output:
-  output_dir: "./outputs"
-  figures_dir: "./outputs/figures"
-  report_html: "./outputs/report.html"
-  report_pdf: "./outputs/report.pdf"
-  executive_summary: "./outputs/executive_summary.md"
-  qc_report: "./outputs/qc_report.txt"
+  output_dir: "./output"
+  figures_dir: "./output/figures"
+  report_html: "./output/report.html"
+  report_pdf: "./output/report.pdf"
+  executive_summary: "./output/executive_summary.md"
+  qc_report: "./output/qc_report.txt"
 
 random_seed: 42
